@@ -1,14 +1,11 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
 import Products from './components/Products';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Products />
-      </header>
+    <div style={{ padding: '20px' }}>
+      <h1>My E-Commerce App</h1>
+      <Products />
     </div>
   );
 }
