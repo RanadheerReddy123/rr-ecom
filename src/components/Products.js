@@ -1,35 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import ProductCard from './ProductCard';
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchProductsAsync, addToCart } from '../redux/cartSlice';
 
 function Products() {
-  // 1. Declare state variables using useState
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { products, status, cartItems } = useSelector((state) => state.cart);
 
-  // 2. Fetch remote data on component mount using useEffect
   useEffect(() => {
-    fetch('https://fakestoreapi.com/products?limit=5')
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => console.error(err));
-  }, []); // Empty dependency array [] ensures this runs only once on mount
+    dispatch(fetchProductsAsync());
+  }, [dispatch]);
 
-  if (loading) return <h2>Loading products...</h2>;
+  if (status === 'loading') return <h2>Loading products via Redux...</h2>;
 
   return (
     <div>
-      <h2>Product Catalog</h2>
-      {/* 3. Render lists efficiently using unique key props */}
+      <h2>Product Catalog (Cart Items: {cartItems.length})</h2>
       {products.map((item) => (
-        <ProductCard
-          key={item.id} // Essential for Virtual DOM reconciliation
-          title={item.title}
-          price={item.price}
-          category={item.category}
-        />
+        <div key={item.id} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px' }}>
+          <h3>{item.title}</h3>
+          <p>Price: ${item.price}</p>
+          <button onClick={() => dispatch(addToCart(item))}>Add to Cart</button>
+        </div>
       ))}
     </div>
   );
