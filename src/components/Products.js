@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 import { addToCart } from '../redux/cartSlice';
 import Pagination from './Pagination';
+import QuickSearch from './QuickSearch';
 
 function Products() {
   const dispatch = useDispatch();
   
-  // State variables for data, search, sort, and pagination
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState('asc');
   const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Fetch data dynamically when pageNumber updates
   useEffect(() => {
     setLoading(true);
     fetch(`https://fakestoreapi.com/products?limit=5`)
@@ -25,42 +24,46 @@ function Products() {
       .catch((err) => console.error(err));
   }, [pageNumber]);
 
-  // Controlled search input handler
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  // 1. useCallback: Prevent re-creating callback references across re-renders
+  const handleNext = useCallback(() => {
+    setPageNumber((prev) => prev + 1);
+  }, []);
 
-  // Sorting callbacks
-  const handleSortAscending = () => setSortOrder('asc');
-  const handleSortDescending = () => setSortOrder('desc');
+  const handlePrevious = useCallback(() => {
+    setPageNumber((prev) => Math.max(prev - 1, 1));
+  }, []);
 
-  // Pagination navigation callbacks
-  const handleNext = () => setPageNumber((prev) => prev + 1);
-  const handlePrevious = () => setPageNumber((prev) => Math.max(prev - 1, 1));
+  const handleQuickSearch = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
 
-  // Dynamic search filtering
-  const filteredItems = items.filter((item) =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 2. useMemo: Memoize expensive filtering & sorting calculations
+  const processedItems = useMemo(() => {
+    const filtered = items.filter((item) =>
+      item.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-  // Dynamic sorting (Ascending / Descending by Price)
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-  });
+    return [...filtered].sort((a, b) => {
+      return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+    });
+  }, [items, searchTerm, sortOrder]); // Only recompute when dependencies change
 
-  if (loading) return <h2>Loading page {pageNumber}...</h2>;
+  if (loading) return <h2>Loading products...</h2>;
 
   return (
     <div>
-      <h2>Product Catalog</h2>
+      <h2>Product Catalog (Optimized)</h2>
+
+      {/* Uncontrolled Input Component using useRef */}
+      <QuickSearch onSearchSubmit={handleQuickSearch} />
 
       {/* Controlled Search Box */}
       <div style={{ marginBottom: '15px' }}>
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Filter products..."
           value={searchTerm}
-          onChange={handleSearchChange}
+          onChange={(e) => setSearchTerm(e.target.value)}
           style={{ padding: '8px', width: '250px' }}
         />
       </div>
@@ -68,13 +71,13 @@ function Products() {
       {/* Sort Buttons */}
       <div style={{ marginBottom: '15px' }}>
         <span>Sort by Price: </span>
-        <button onClick={handleSortAscending}>Price Low to High ▲</button>
-        <button onClick={handleSortDescending} style={{ marginLeft: '8px' }}>
+        <button onClick={() => setSortOrder('asc')}>Price Low to High ▲</button>
+        <button onClick={() => setSortOrder('desc')} style={{ marginLeft: '8px' }}>
           Price High to Low ▼
         </button>
       </div>
 
-      {/* Product List */}
+      {/* Render Memoized List */}
       <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
@@ -85,7 +88,7 @@ function Products() {
           </tr>
         </thead>
         <tbody>
-          {sortedItems.map((item) => (
+          {processedItems.map((item) => (
             <tr key={item.id}>
               <td>{item.title}</td>
               <td>{item.category}</td>
@@ -98,7 +101,7 @@ function Products() {
         </tbody>
       </table>
 
-      {/* Pagination Controls */}
+      {/* Memoized Callback Pagination */}
       <Pagination
         pageNumber={pageNumber}
         handleNext={handleNext}
