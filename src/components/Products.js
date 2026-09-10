@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../redux/cartSlice';
+import ProductReviews from './ProductReviews';
 import Pagination from './Pagination';
 import QuickSearch from './QuickSearch';
 
@@ -46,7 +47,7 @@ function Products() {
     return [...filtered].sort((a, b) => {
       return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
     });
-  }, [items, searchTerm, sortOrder]); // Only recompute when dependencies change
+  }, [items, searchTerm, sortOrder]);
 
   if (loading) return <h2>Loading products...</h2>;
 
@@ -77,29 +78,25 @@ function Products() {
         </button>
       </div>
 
-      {/* Render Memoized List */}
-      <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {processedItems.map((item) => (
-            <tr key={item.id}>
-              <td>{item.title}</td>
-              <td>{item.category}</td>
-              <td>${item.price}</td>
-              <td>
-                <button onClick={() => dispatch(addToCart(item))}>Add to Cart</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Render Product Cards with Reviews */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {processedItems.map((item) => (
+          <div key={item.id} style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3>{item.title}</h3>
+                <p>Category: {item.category} | Price: ${item.price}</p>
+              </div>
+              <button onClick={() => dispatch(addToCart(item))} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+                Add to Cart
+              </button>
+            </div>
+
+            {/* Embedded Product Reviews Component */}
+            <ProductReviews productId={item.id} />
+          </div>
+        ))}
+      </div>
 
       {/* Memoized Callback Pagination */}
       <Pagination
