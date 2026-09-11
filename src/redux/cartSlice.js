@@ -1,6 +1,24 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// 1. Asynchronous thunk to execute API requests outside of components
+// Helper functions for localStorage sync
+const loadCartFromStorage = () => {
+  try {
+    const savedCart = localStorage.getItem('cartItems');
+    return savedCart ? JSON.parse(savedCart) : [];
+  } catch (err) {
+    console.error('Failed to load cart from localStorage:', err);
+    return [];
+  }
+};
+
+const saveCartToStorage = (cartItems) => {
+  try {
+    localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  } catch (err) {
+    console.error('Failed to save cart to localStorage:', err);
+  }
+};
+
 export const fetchProductsAsync = createAsyncThunk(
   'cart/fetchProducts',
   async () => {
@@ -10,18 +28,25 @@ export const fetchProductsAsync = createAsyncThunk(
   }
 );
 
-// 2. Create slice with initial state and reducer actions
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
-    cartItems: [],
+    cartItems: loadCartFromStorage(), // Load persisted items on app initialization
     products: [],
     status: 'idle',
   },
   reducers: {
-    // Reducer action to add items to cart
     addToCart: (state, action) => {
       state.cartItems.push(action.payload);
+      saveCartToStorage(state.cartItems); // Persist updated cart list
+    },
+    removeFromCart: (state, action) => {
+      state.cartItems = state.cartItems.filter((_, index) => index !== action.payload);
+      saveCartToStorage(state.cartItems); // Persist updated cart list
+    },
+    clearCart: (state) => {
+      state.cartItems = [];
+      localStorage.removeItem('cartItems'); // Clear storage
     },
   },
   extraReducers: (builder) => {
@@ -39,5 +64,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;
